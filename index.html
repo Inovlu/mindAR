@@ -42,11 +42,69 @@
         opacity: 0.8;
         transition: none;
       }
+      #photo-preview {
+        position: fixed;
+        inset: 0;
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 24px;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.92);
+        color: #ffffff;
+        font-family: sans-serif;
+      }
+      #photo-preview[hidden] {
+        display: none;
+      }
+      #photo-preview-image {
+        display: block;
+        max-width: 100%;
+        max-height: calc(100% - 100px);
+        object-fit: contain;
+      }
+      #photo-preview-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+      #photo-preview-actions button {
+        min-height: 48px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 24px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #save-photo-button {
+        background: #ffffff;
+        color: #111111;
+      }
+      #discard-photo-button {
+        background: #444444;
+        color: #ffffff;
+      }
+      #photo-preview-actions button:disabled {
+        opacity: 0.6;
+      }
     </style>
   </head>
   <body>
     <button id="capture-button" type="button" aria-label="Sacar foto"></button>
     <div id="capture-flash"></div>
+    <section id="photo-preview" role="dialog" aria-modal="true" aria-label="Vista previa de la foto" hidden>
+      <img id="photo-preview-image" alt="Vista previa de la fotografía" />
+      <div id="photo-preview-actions">
+        <button id="save-photo-button" type="button">Guardar en galería</button>
+        <button id="discard-photo-button" type="button">Descartar</button>
+      </div>
+    </section>
     <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 10; warmupTolerance: 3; missTolerance: 1;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -287,6 +345,9 @@
         const pendingTargets = [];
         const pendingSet = new Set();
         const spinners = new Map();
+        let previewBlob = null;
+        let previewUrl = null;
+        let previewFileName = null;
 
         function setSpinner(index, anchor, show) {
           let spinner = spinners.get(index);
@@ -466,6 +527,7 @@
         }
 
         function onTargetFound(index, anchor) {
+          activeTargets.delete(index);
           activeTargets.add(index);
           metrics.found(index);
           updateSpinner(index, anchor);
@@ -529,7 +591,7 @@
           });
         }
 
-        function capturePhoto() {
+        async function capturePhoto() {
           const glCanvas = scene.canvas;
           const video = document.querySelector('video');
           const width = window.innerWidth;
@@ -540,31 +602,58 @@
           const output = document.createElement('canvas');
           output.width = Math.round(width * ratio);
           output.height = Math.round(height * ratio);
-          const ctx = output.getContext('2d');
-          ctx.scale(ratio, ratio);
+          try {
+            const ctx = output.getContext('2d');
+            if (!ctx) throw new Error('Could not create a 2D canvas context');
+            ctx.scale(ratio, ratio);
 
-          if (video && video.readyState >= 2) {
-            const rect = video.getBoundingClientRect();
-            ctx.drawImage(video, rect.left, rect.top, rect.width, rect.height);
+            if (video && video.readyState >= 2) {
+              const rect = video.getBoundingClientRect();
+              ctx.drawImage(video, rect.left, rect.top, rect.width, rect.height);
+            }
+
+            // Re-render right before reading so the WebGL buffer isn't empty (no preserveDrawingBuffer).
+            scene.renderer.render(scene.object3D, scene.camera);
+            ctx.drawImage(glCanvas, glRect.left, glRect.top, glRect.width, glRect.height);
+
+            return await new Promise((resolve, reject) => {
+              output.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Could not encode the photo as JPEG'));
+              }, 'image/jpeg', 0.92);
+            });
+          } finally {
+            output.width = 0;
+            output.height = 0;
           }
-
-          // Re-render right before reading so the WebGL buffer isn't empty (no preserveDrawingBuffer).
-          scene.renderer.render(scene.object3D, scene.camera);
-          ctx.drawImage(glCanvas, glRect.left, glRect.top, glRect.width, glRect.height);
-
-          return new Promise((resolve) => output.toBlob(resolve, 'image/jpeg', 0.92));
         }
 
         function photoFileName() {
-          const visible = [...activeTargets].find((index) => {
-            const entry = cache.get(index);
-            return entry && entry.status === 'ready';
-          });
-          const model = visible !== undefined
-            ? modelPaths[visible].split('/').pop().replace(/_optimizados?\.glb$/, '').replace(/\.glb$/, '')
+          const tracked = [...activeTargets].reverse().find((index) => modelPaths[index]);
+          const model = tracked !== undefined
+            ? modelPaths[tracked].split('/').pop().replace(/_optimizados?\.glb$/, '').replace(/\.glb$/, '')
             : 'foto';
           const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
           return `AR_${model}_${stamp}.jpg`;
+        }
+
+        function showPhotoPreview(blob, fileName) {
+          previewBlob = blob;
+          previewFileName = fileName;
+          previewUrl = URL.createObjectURL(blob);
+          document.getElementById('photo-preview-image').src = previewUrl;
+          document.getElementById('photo-preview').hidden = false;
+        }
+
+        function clearPhotoPreview() {
+          document.getElementById('photo-preview').hidden = true;
+          document.getElementById('photo-preview-image').removeAttribute('src');
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          previewUrl = null;
+          previewBlob = null;
+          previewFileName = null;
+          document.getElementById('save-photo-button').disabled = false;
+          captureButton.disabled = false;
         }
 
         function downloadBlob(blob, fileName) {
@@ -578,36 +667,55 @@
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
-        async function savePhoto(blob) {
-          const fileName = photoFileName();
+        async function savePhoto(blob, fileName) {
           const file = new File([blob], fileName, { type: blob.type });
           // On mobile the share sheet lets the user save straight to the photo gallery.
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
               await navigator.share({ files: [file] });
-              return;
+              return 'saved';
             } catch (error) {
-              if (error.name === 'AbortError') return;
+              if (error.name === 'AbortError') return 'cancelled';
             }
           }
           downloadBlob(blob, fileName);
+          return 'saved';
         }
 
         const captureButton = document.getElementById('capture-button');
         const captureFlash = document.getElementById('capture-flash');
+        const savePhotoButton = document.getElementById('save-photo-button');
+        const discardPhotoButton = document.getElementById('discard-photo-button');
         captureButton.addEventListener('click', async () => {
           if (!scene.renderer) return;
           captureButton.disabled = true;
           captureFlash.classList.add('active');
           requestAnimationFrame(() => captureFlash.classList.remove('active'));
           try {
+            const fileName = photoFileName();
             const blob = await capturePhoto();
-            if (blob) await savePhoto(blob);
+            showPhotoPreview(blob, fileName);
           } catch (error) {
             console.error('[Capture] Failed to take photo', error);
-          } finally {
             captureButton.disabled = false;
           }
+        });
+
+        savePhotoButton.addEventListener('click', async () => {
+          if (!previewBlob || !previewFileName) return;
+          savePhotoButton.disabled = true;
+          try {
+            const result = await savePhoto(previewBlob, previewFileName);
+            if (result === 'saved') clearPhotoPreview();
+            else savePhotoButton.disabled = false;
+          } catch (error) {
+            console.error('[Capture] Failed to save photo', error);
+            savePhotoButton.disabled = false;
+          }
+        });
+
+        discardPhotoButton.addEventListener('click', () => {
+          clearPhotoPreview();
         });
 
         if (scene.hasLoaded) initializeTargetEvents();
