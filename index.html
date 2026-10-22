@@ -29,6 +29,36 @@
       #capture-button:disabled {
         opacity: 0.5;
       }
+      #torch-button {
+        position: fixed;
+        right: 24px;
+        bottom: calc(36px + env(safe-area-inset-bottom));
+        z-index: 10000;
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #torch-button[aria-pressed="true"] {
+        background: #ffffff;
+        color: #111111;
+      }
+      #torch-button:disabled {
+        border-color: rgba(255, 255, 255, 0.45);
+        background: rgba(100, 100, 100, 0.45);
+        color: rgba(255, 255, 255, 0.45);
+        box-shadow: none;
+        cursor: not-allowed;
+        opacity: 0.75;
+      }
       #capture-flash {
         position: fixed;
         inset: 0;
@@ -97,6 +127,11 @@
   </head>
   <body>
     <button id="capture-button" type="button" aria-label="Sacar foto"></button>
+    <button id="torch-button" type="button" aria-label="Flash de cámara no disponible" aria-pressed="false" disabled>
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 2 4.5 13h6L9.5 22 19.5 9h-6L13 2z" />
+      </svg>
+    </button>
     <div id="capture-flash"></div>
     <section id="photo-preview" role="dialog" aria-modal="true" aria-label="Vista previa de la foto" hidden>
       <img id="photo-preview-image" alt="Vista previa de la fotografía" />
@@ -684,8 +719,59 @@
 
         const captureButton = document.getElementById('capture-button');
         const captureFlash = document.getElementById('capture-flash');
+        const torchButton = document.getElementById('torch-button');
         const savePhotoButton = document.getElementById('save-photo-button');
         const discardPhotoButton = document.getElementById('discard-photo-button');
+        let cameraTrack = null;
+        let torchSupported = false;
+        let torchEnabled = false;
+        let torchBusy = false;
+
+        function updateTorchButton() {
+          torchButton.disabled = !torchSupported || torchBusy;
+          torchButton.setAttribute('aria-pressed', String(torchEnabled));
+          torchButton.setAttribute(
+            'aria-label',
+            torchSupported
+              ? `Flash de cámara ${torchEnabled ? 'encendido' : 'apagado'}`
+              : 'Flash de cámara no disponible'
+          );
+        }
+
+        function initializeTorch() {
+          const video = scene.systems['mindar-image-system']?.video || document.querySelector('video');
+          cameraTrack = video?.srcObject?.getVideoTracks()[0] || null;
+          if (!cameraTrack || typeof cameraTrack.getCapabilities !== 'function') {
+            updateTorchButton();
+            return;
+          }
+
+          try {
+            torchSupported = cameraTrack.getCapabilities().torch === true;
+          } catch (error) {
+            console.warn('[Torch] Could not inspect camera capabilities', error);
+            torchSupported = false;
+          }
+          updateTorchButton();
+        }
+
+        torchButton.addEventListener('click', async () => {
+          if (!torchSupported || !cameraTrack || torchBusy) return;
+          torchBusy = true;
+          updateTorchButton();
+          try {
+            await cameraTrack.applyConstraints({ advanced: [{ torch: !torchEnabled }] });
+            torchEnabled = !torchEnabled;
+          } catch (error) {
+            console.warn('[Torch] Camera rejected the torch setting', error);
+            torchSupported = false;
+            torchEnabled = false;
+          } finally {
+            torchBusy = false;
+            updateTorchButton();
+          }
+        });
+
         captureButton.addEventListener('click', async () => {
           if (!scene.renderer) return;
           captureButton.disabled = true;
@@ -718,6 +804,7 @@
           clearPhotoPreview();
         });
 
+        scene.addEventListener('arReady', initializeTorch, { once: true });
         if (scene.hasLoaded) initializeTargetEvents();
         else scene.addEventListener('loaded', initializeTargetEvents, { once: true });
       })();
