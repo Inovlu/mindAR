@@ -49,7 +49,16 @@ El controlador emite mensajes `[GLB LRU]` para cargas, hits, pérdidas, expulsio
 
 ## Archivos y rutas
 
-Las rutas GLB permanecen relativas al HTML (`assets/...`) y el archivo de targets sigue configurado como `./targets/targets.mind`, por lo que la estructura puede servirse desde una ruta raíz o subruta estática compatible.
+Los GLB se cargan desde `assets_opt_v003/`, la única carpeta de modelos de la aplicación. El archivo de targets sigue configurado como `./targets/targets.mind`, por lo que la estructura puede servirse desde una ruta raíz o subruta estática compatible.
+
+## Rendimiento
+
+- Por defecto se usa el material PBR metálico original de cada GLB. Agregando `?lightMaterial` a la URL, al cargar cada modelo se reemplaza por un `MeshLambertMaterial` de una sola cara que conserva los colores de vértice.
+- La resolución del canvas se limita a un pixel ratio de 2 (`MAX_PIXEL_RATIO`).
+- Mientras un target detectado espera su modelo, se muestra un anillo giratorio sobre el target.
+- `?stats` muestra el panel de A-Frame (FPS, tiempo por frame, triángulos, draw calls).
+- `?metrics` registra métricas `[Metrics]` en la consola: tiempo hasta `arReady`, descarga de `targets.mind`, y por modelo el tiempo de descarga, decodificación y de target encontrado a modelo visible; además FPS y tiempo de frame p50/p95 cada 5 s. En la consola, `arMetrics.summary()` muestra tablas y un resumen, y `copy(arMetrics.export())` copia todos los datos como JSON. La memoria (`heapMB`) solo está disponible en Chrome.
+- `vercel.json` sirve `targets.mind` como `application/json` para que Vercel lo comprima (no comprime `application/octet-stream`), y agrega `Cache-Control` de un día para `.mind` y `.glb`.
 
 ## Detalle de URL de A-Frame
 

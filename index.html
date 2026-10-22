@@ -1,11 +1,53 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://aframe.io" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+    <link rel="preload" href="./targets/targets.mind" as="fetch" crossorigin />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      #capture-button {
+        position: fixed;
+        left: 50%;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 10000;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        border: 4px solid #ffffff;
+        background: rgba(255, 255, 255, 0.35);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #capture-button:active {
+        background: rgba(255, 255, 255, 0.8);
+      }
+      #capture-button:disabled {
+        opacity: 0.5;
+      }
+      #capture-flash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-out;
+      }
+      #capture-flash.active {
+        opacity: 0.8;
+        transition: none;
+      }
+    </style>
   </head>
   <body>
-    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.00001; filterBeta: 10; warmupTolerance: 5; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <button id="capture-button" type="button" aria-label="Sacar foto"></button>
+    <div id="capture-flash"></div>
+    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
@@ -54,35 +96,239 @@
     <script>
       (() => {
         const MAX_CACHED_MODELS = 3;
+        const MAX_PIXEL_RATIO = 2;
+        const params = new URLSearchParams(location.search);
+        const MODEL_DIR = 'assets_opt_v003';
+        // Test-only: append ?lightMaterial to replace the GLB's PBR material with Lambert.
+        const USE_LIGHT_MATERIAL = params.has('lightMaterial');
+        console.info(`[GLB LRU] Using models from ${MODEL_DIR}/, ${USE_LIGHT_MATERIAL ? 'light' : 'original'} material`);
         const modelPaths = [
-          'assets/Abigail_Bernardez_optimizado.glb',
-          'assets/Agustin_Pina_optimizado.glb',
-          'assets/Sadran_Agustin_optimizados.glb',
-          'assets/Agustina_Lopez_optimizado.glb',
-          'assets/Amy_Lindo_optimizado.glb',
-          'assets/Ariadna_Robles_optimizado.glb',
-          'assets/Cami_Casolati_optimizado.glb',
-          'assets/Roman_Brucoli_optimizado.glb',
-          'assets/Piputto_Facundo_optimizado.glb',
-          'assets/Fede_Pracias_optimizado.glb',
-          'assets/Fran_Rizzo_optimizado.glb',
-          'assets/Ascona_Juli_optimizado.glb',
-          'assets/Violi_Luca_optimizado.glb',
-          'assets/Maite_Rodriguez_optimizado.glb',
-          'assets/Ramos_Melody_optimizado.glb',
-          'assets/Mamciz_Pedro_optimizado.glb',
-          'assets/Roque_Casarella_optimizado.glb',
-          'assets/Francisco_Silva_optimizado.glb',
-          'assets/Irina_Silva_optimizado.glb',
-          'assets/Sofi_Cravero_optimizado.glb',
-          'assets/Virna_Vianello_optimizado.glb'
-        ];
+          'Abigail_Bernardez_optimizado.glb',
+          'Agustin_Pina_optimizado.glb',
+          'Sadran_Agustin_optimizados.glb',
+          'Agustina_Lopez_optimizado.glb',
+          'Amy_Lindo_optimizado.glb',
+          'Ariadna_Robles_optimizado.glb',
+          'Cami_Casolati_optimizado.glb',
+          'Roman_Brucoli_optimizado.glb',
+          'Piputto_Facundo_optimizado.glb',
+          'Fede_Pracias_optimizado.glb',
+          'Fran_Rizzo_optimizado.glb',
+          'Ascona_Juli_optimizado.glb',
+          'Violi_Luca_optimizado.glb',
+          'Maite_Rodriguez_optimizado.glb',
+          'Ramos_Melody_optimizado.glb',
+          'Mamciz_Pedro_optimizado.glb',
+          'Roque_Casarella_optimizado.glb',
+          'Francisco_Silva_optimizado.glb',
+          'Irina_Silva_optimizado.glb',
+          'Sofi_Cravero_optimizado.glb',
+          'Virna_Vianello_optimizado.glb'
+        ].map((file) => `${MODEL_DIR}/${file}`);
 
         const scene = document.querySelector('a-scene');
+        // Append ?stats to show A-Frame's FPS/triangles overlay.
+        if (params.has('stats')) scene.setAttribute('stats', '');
+        // Append ?metrics to log load and frame metrics; inspect them with arMetrics.summary() in the console.
+        const metrics = createMetrics(params.has('metrics'));
+
+        function createMetrics(enabled) {
+          const noop = () => {};
+          if (!enabled) return { found: noop, loadStart: noop, loaded: noop, visible: noop, lost: noop };
+
+          const FRAME_WINDOW_MS = 5000;
+          const round = (value) => Math.round(value * 10) / 10;
+          const kb = (bytes) => (bytes ? Math.round(bytes / 1024) : null);
+          const resourceEntry = (url) => performance.getEntriesByName(url, 'resource').at(-1);
+          const heapMB = () => (performance.memory ? round(performance.memory.usedJSHeapSize / 1048576) : null);
+
+          const data = {
+            config: {
+              modelDir: MODEL_DIR,
+              material: USE_LIGHT_MATERIAL ? 'light' : 'original',
+              devicePixelRatio: window.devicePixelRatio,
+              maxPixelRatio: MAX_PIXEL_RATIO,
+              userAgent: navigator.userAgent
+            },
+            startup: {},
+            models: [],
+            frames: []
+          };
+          const foundAt = new Map();
+          const loadStartAt = new Map();
+          const visibleTargets = new Set();
+
+          if (performance.setResourceTimingBufferSize) performance.setResourceTimingBufferSize(500);
+
+          if (!scene.hasLoaded) {
+            scene.addEventListener('loaded', () => {
+              data.startup.sceneLoadedMs = Math.round(performance.now());
+            }, { once: true });
+          }
+
+          scene.addEventListener('arReady', () => {
+            const mind = resourceEntry(new URL('./targets/targets.mind', document.baseURI).href);
+            Object.assign(data.startup, {
+              arReadyMs: Math.round(performance.now()),
+              mindDownloadMs: mind ? Math.round(mind.responseEnd - mind.startTime) : null,
+              mindTransferKB: mind ? kb(mind.transferSize) : null,
+              mindEncodedKB: mind ? kb(mind.encodedBodySize) : null,
+              mindDecodedKB: mind ? kb(mind.decodedBodySize) : null,
+              heapMB: heapMB()
+            });
+            console.info('[Metrics] Startup', data.startup);
+          }, { once: true });
+
+          let windowStart = performance.now();
+          let lastFrame = windowStart;
+          let deltas = [];
+          function onFrame(now) {
+            deltas.push(now - lastFrame);
+            lastFrame = now;
+            if (now - windowStart >= FRAME_WINDOW_MS) {
+              const sorted = deltas.slice().sort((a, b) => a - b);
+              const pick = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+              const info = scene.renderer ? scene.renderer.info : null;
+              const sample = {
+                atMs: Math.round(now),
+                visibleTargets: [...visibleTargets].join(',') || '-',
+                fps: round(deltas.length / ((now - windowStart) / 1000)),
+                frameP50Ms: round(pick(0.5)),
+                frameP95Ms: round(pick(0.95)),
+                frameMaxMs: round(sorted[sorted.length - 1]),
+                triangles: info ? info.render.triangles : null,
+                drawCalls: info ? info.render.calls : null,
+                geometries: info ? info.memory.geometries : null,
+                heapMB: heapMB()
+              };
+              data.frames.push(sample);
+              console.info('[Metrics] Frames', sample);
+              windowStart = now;
+              deltas = [];
+            }
+            requestAnimationFrame(onFrame);
+          }
+          requestAnimationFrame(onFrame);
+
+          window.arMetrics = {
+            data,
+            summary() {
+              const withModel = data.frames.filter((f) => f.visibleTargets !== '-');
+              const avg = (key) => (withModel.length ? round(withModel.reduce((s, f) => s + f[key], 0) / withModel.length) : null);
+              const misses = data.models.filter((m) => !m.cacheHit);
+              const avgMiss = (key) => (misses.length ? Math.round(misses.reduce((s, m) => s + (m[key] || 0), 0) / misses.length) : null);
+              console.info('[Metrics] Config', data.config);
+              console.info('[Metrics] Startup', data.startup);
+              console.table(data.models);
+              console.table(data.frames);
+              const overview = {
+                avgFoundToVisibleMs: avgMiss('foundToVisibleMs'),
+                avgDownloadMs: avgMiss('downloadMs'),
+                avgDecodeMs: avgMiss('decodeMs'),
+                avgFpsWithModel: avg('fps'),
+                avgFrameP50MsWithModel: avg('frameP50Ms'),
+                avgFrameP95MsWithModel: avg('frameP95Ms'),
+                maxHeapMB: Math.max(...data.frames.map((f) => f.heapMB || 0)) || null
+              };
+              console.info('[Metrics] Overview (cache misses / frames with a model visible)', overview);
+              return overview;
+            },
+            export() {
+              return JSON.stringify(data, null, 2);
+            }
+          };
+          console.info('[Metrics] Enabled. Run arMetrics.summary() or copy(arMetrics.export()) in the console.');
+
+          return {
+            found(index) {
+              if (!foundAt.has(index)) foundAt.set(index, performance.now());
+            },
+            loadStart(index) {
+              loadStartAt.set(index, performance.now());
+            },
+            loaded(index, url) {
+              const now = performance.now();
+              const entry = resourceEntry(url);
+              const record = {
+                target: index,
+                file: url.split('/').pop(),
+                cacheHit: false,
+                loadMs: Math.round(now - loadStartAt.get(index)),
+                downloadMs: entry ? Math.round(entry.responseEnd - entry.startTime) : null,
+                decodeMs: entry ? Math.round(now - entry.responseEnd) : null,
+                transferKB: entry ? kb(entry.transferSize) : null,
+                foundToVisibleMs: null,
+                heapMB: heapMB()
+              };
+              loadStartAt.delete(index);
+              data.models.push(record);
+              console.info('[Metrics] Model loaded', record);
+            },
+            visible(index, cacheHit) {
+              visibleTargets.add(index);
+              const start = foundAt.get(index);
+              if (start === undefined) return;
+              foundAt.delete(index);
+              const foundToVisibleMs = Math.round(performance.now() - start);
+              const record = [...data.models].reverse().find((m) => m.target === index && m.foundToVisibleMs === null);
+              if (record && !cacheHit) record.foundToVisibleMs = foundToVisibleMs;
+              else data.models.push({ target: index, file: modelPaths[index].split('/').pop(), cacheHit: true, foundToVisibleMs });
+              console.info(`[Metrics] Target ${index} visible after ${foundToVisibleMs} ms${cacheHit ? ' (cache hit)' : ''}`);
+            },
+            lost(index) {
+              visibleTargets.delete(index);
+              foundAt.delete(index);
+            }
+          };
+        }
+
         const cache = new Map();
         const activeTargets = new Set();
         const pendingTargets = [];
         const pendingSet = new Set();
+        const spinners = new Map();
+
+        function setSpinner(index, anchor, show) {
+          let spinner = spinners.get(index);
+          if (!spinner) {
+            if (!show || !anchor) return;
+            spinner = document.createElement('a-ring');
+            spinner.setAttribute('radius-inner', 0.08);
+            spinner.setAttribute('radius-outer', 0.1);
+            spinner.setAttribute('theta-length', 270);
+            spinner.setAttribute('position', '0 0 0.01');
+            spinner.setAttribute('material', 'shader: flat; color: #ffffff; transparent: true; opacity: 0.9');
+            spinner.setAttribute('animation', 'property: rotation; from: 0 0 0; to: 0 0 -360; dur: 1000; easing: linear; loop: true');
+            anchor.appendChild(spinner);
+            spinners.set(index, spinner);
+          }
+          spinner.setAttribute('visible', show);
+          spinner.setAttribute('animation', 'enabled', show);
+        }
+
+        function updateSpinner(index, anchor) {
+          const entry = cache.get(index);
+          setSpinner(index, anchor, activeTargets.has(index) && !(entry && entry.status === 'ready'));
+        }
+
+        function applyLightMaterial(entity) {
+          const root = entity.getObject3D('mesh');
+          if (!root) return;
+          root.traverse((object) => {
+            if (!object.isMesh) return;
+            const oldMaterials = Array.isArray(object.material) ? object.material : [object.material];
+            const newMaterials = oldMaterials.map((oldMaterial) => {
+              const material = new THREE.MeshLambertMaterial({
+                color: oldMaterial.color ? oldMaterial.color.clone() : 0xffffff,
+                vertexColors: Boolean(object.geometry.attributes.color),
+                side: THREE.FrontSide
+              });
+              oldMaterial.dispose();
+              return material;
+            });
+            object.material = Array.isArray(object.material) ? newMaterials : newMaterials[0];
+          });
+        }
 
         function touch(index) {
           const entry = cache.get(index);
@@ -91,10 +337,11 @@
           cache.set(index, entry);
         }
 
-        function attachToTarget(entry) {
+        function attachToTarget(entry, cacheHit = false) {
           const anchor = entry.anchor;
           if (!anchor || !activeTargets.has(entry.index)) return;
           entry.entity.setAttribute('visible', true);
+          metrics.visible(entry.index, cacheHit);
         }
 
         function disposeEntry(entry) {
@@ -166,7 +413,10 @@
 
           entity.addEventListener('model-loaded', () => {
             if (cache.get(index) !== entry) return;
+            if (USE_LIGHT_MATERIAL) applyLightMaterial(entity);
+            metrics.loaded(index, entry.url);
             entry.status = 'ready';
+            updateSpinner(index, entry.anchor);
             if (entry.active && activeTargets.has(index)) attachToTarget(entry);
             console.info(`[GLB LRU] Loaded target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
             processPendingTargets();
@@ -177,11 +427,13 @@
             console.error(`[GLB LRU] Failed to load target ${index}`, event.detail);
             cache.delete(index);
             disposeEntry(entry);
+            setSpinner(index, entry.anchor, false);
             processPendingTargets();
           }, { once: true });
 
           cache.set(index, entry);
           entry.anchor.appendChild(entity);
+          metrics.loadStart(index);
           entity.setAttribute('gltf-model', entry.url);
           console.info(`[GLB LRU] Loading target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
         }
@@ -215,12 +467,14 @@
 
         function onTargetFound(index, anchor) {
           activeTargets.add(index);
+          metrics.found(index);
+          updateSpinner(index, anchor);
           const entry = cache.get(index);
           if (entry) {
             entry.active = true;
             entry.anchor = anchor;
             touch(index);
-            if (entry.status === 'ready') attachToTarget(entry);
+            if (entry.status === 'ready') attachToTarget(entry, true);
             console.info(`[GLB LRU] Target ${index} found; cache hit, moved to MRU`);
             return;
           }
@@ -234,6 +488,8 @@
 
         function onTargetLost(index) {
           activeTargets.delete(index);
+          metrics.lost(index);
+          setSpinner(index, null, false);
           if (pendingSet.has(index)) {
             pendingSet.delete(index);
             const queueIndex = pendingTargets.indexOf(index);
@@ -251,6 +507,14 @@
         }
 
         function initializeTargetEvents() {
+          const gltfSystem = scene.systems['gltf-model'];
+          const dracoLoader = gltfSystem && gltfSystem.getDRACOLoader();
+          if (dracoLoader) dracoLoader.preload();
+
+          if (scene.renderer && window.devicePixelRatio > MAX_PIXEL_RATIO) {
+            scene.renderer.setPixelRatio(MAX_PIXEL_RATIO);
+          }
+
           document.querySelectorAll('[mindar-image-target]').forEach((anchor) => {
             const targetConfig = anchor.getAttribute('mindar-image-target');
             const index = Number(targetConfig.targetIndex);
@@ -264,6 +528,87 @@
             anchor.addEventListener('targetLost', () => onTargetLost(index));
           });
         }
+
+        function capturePhoto() {
+          const glCanvas = scene.canvas;
+          const video = document.querySelector('video');
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          const glRect = glCanvas.getBoundingClientRect();
+          const ratio = glCanvas.width / glRect.width || 1;
+
+          const output = document.createElement('canvas');
+          output.width = Math.round(width * ratio);
+          output.height = Math.round(height * ratio);
+          const ctx = output.getContext('2d');
+          ctx.scale(ratio, ratio);
+
+          if (video && video.readyState >= 2) {
+            const rect = video.getBoundingClientRect();
+            ctx.drawImage(video, rect.left, rect.top, rect.width, rect.height);
+          }
+
+          // Re-render right before reading so the WebGL buffer isn't empty (no preserveDrawingBuffer).
+          scene.renderer.render(scene.object3D, scene.camera);
+          ctx.drawImage(glCanvas, glRect.left, glRect.top, glRect.width, glRect.height);
+
+          return new Promise((resolve) => output.toBlob(resolve, 'image/jpeg', 0.92));
+        }
+
+        function photoFileName() {
+          const visible = [...activeTargets].find((index) => {
+            const entry = cache.get(index);
+            return entry && entry.status === 'ready';
+          });
+          const model = visible !== undefined
+            ? modelPaths[visible].split('/').pop().replace(/_optimizados?\.glb$/, '').replace(/\.glb$/, '')
+            : 'foto';
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          return `AR_${model}_${stamp}.jpg`;
+        }
+
+        function downloadBlob(blob, fileName) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        async function savePhoto(blob) {
+          const fileName = photoFileName();
+          const file = new File([blob], fileName, { type: blob.type });
+          // On mobile the share sheet lets the user save straight to the photo gallery.
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file] });
+              return;
+            } catch (error) {
+              if (error.name === 'AbortError') return;
+            }
+          }
+          downloadBlob(blob, fileName);
+        }
+
+        const captureButton = document.getElementById('capture-button');
+        const captureFlash = document.getElementById('capture-flash');
+        captureButton.addEventListener('click', async () => {
+          if (!scene.renderer) return;
+          captureButton.disabled = true;
+          captureFlash.classList.add('active');
+          requestAnimationFrame(() => captureFlash.classList.remove('active'));
+          try {
+            const blob = await capturePhoto();
+            if (blob) await savePhoto(blob);
+          } catch (error) {
+            console.error('[Capture] Failed to take photo', error);
+          } finally {
+            captureButton.disabled = false;
+          }
+        });
 
         if (scene.hasLoaded) initializeTargetEvents();
         else scene.addEventListener('loaded', initializeTargetEvents, { once: true });
