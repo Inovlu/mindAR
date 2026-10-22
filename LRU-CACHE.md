@@ -10,18 +10,18 @@ Este límite no incluye la cámara, MindAR ni los datos de los 21 targets que co
 
 - `index.html` conserva las 21 entidades `mindar-image-target`, pero ya no declara los modelos en `<a-assets>`.
 - Un mapa de rutas JavaScript mantiene la asociación entre cada `targetIndex` y su archivo GLB. El orden del mapa debe corresponder al orden con el que se compiló `targets/targets.mind`.
-- `#model-cache` es el contenedor de retención de los modelos que no están siendo seguidos; cada modelo retenido se oculta individualmente.
+- Cada entidad GLB se crea directamente como hija de su target MindAR y permanece allí mientras esté en caché. Al perderse el target, se oculta; no se mueve a otro padre, lo que evita que A-Frame reinicie su componente de carga.
 - El controlador escucha `targetFound` y `targetLost` en cada entidad de target.
 
 ## Política LRU
 
-1. En `targetFound`, si el GLB ya está en caché, se mueve al final del `Map`: pasa a ser el más recientemente usado (MRU). Si está listo, se vuelve a colocar bajo la entidad MindAR correspondiente.
+1. En `targetFound`, si el GLB ya está en caché, se mueve al final del `Map`: pasa a ser el más recientemente usado (MRU). Si está listo, se vuelve visible dentro de su entidad MindAR correspondiente.
 2. Si el GLB no está en caché, se agrega a la cola de solicitudes. El controlador carga solicitudes mientras haya espacio.
 3. La caché cuenta modelos listos y cargas en curso; ambos ocupan un slot y el total nunca debe superar tres.
 4. Si está llena, el controlador expulsa el elemento menos recientemente usado que esté inactivo y ya haya terminado de cargar (LRU), libera sus recursos de Three.js y luego carga la solicitud pendiente.
 5. Si los tres slots están activos o todavía cargando, la solicitud queda en espera. Cuando llega `targetLost` o termina una carga, vuelve a intentar procesar la cola.
-6. `targetLost` oculta el modelo y lo mueve al contenedor de caché. No lo elimina por sí solo. Si su solicitud todavía estaba en cola, la cancela.
-7. Si un target se pierde durante su carga, la carga termina en el contenedor oculto. No se muestra hasta un nuevo `targetFound`.
+6. `targetLost` oculta el modelo dentro de su entidad target. No lo elimina por sí solo. Si su solicitud todavía estaba en cola, la cancela.
+7. Si un target se pierde durante su carga, la carga termina dentro de su entidad target, pero el modelo queda oculto hasta un nuevo `targetFound`.
 8. Los errores de carga eliminan la entrada fallida, registran el error en la consola y liberan espacio para la siguiente solicitud.
 
 Los modelos activos nunca se expulsan. Esto es importante si varios targets aparecen en cámara simultáneamente: una solicitud adicional espera hasta que haya un slot seguro.
@@ -50,3 +50,7 @@ El controlador emite mensajes `[GLB LRU]` para cargas, hits, pérdidas, expulsio
 ## Archivos y rutas
 
 Las rutas GLB permanecen relativas al HTML (`assets/...`) y el archivo de targets sigue configurado como `./targets/targets.mind`, por lo que la estructura puede servirse desde una ruta raíz o subruta estática compatible.
+
+## Detalle de URL de A-Frame
+
+El controlador convierte el path relativo del GLB a una URL absoluta con `new URL(...)` y entrega esa URL directamente a `gltf-model`. No debe agregarse otro `url(...)` alrededor de una URL absoluta. La entidad tampoco se debe reparentar al completar la carga: permanece bajo su anchor y se oculta/muestra con `visible`.

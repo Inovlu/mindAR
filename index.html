@@ -2,13 +2,11 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
     <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.00001; filterBeta: 10; warmupTolerance: 5; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="model-cache"></a-entity>
 
       <a-entity mindar-image-target="targetIndex: 0">
       </a-entity>
@@ -81,7 +79,6 @@
         ];
 
         const scene = document.querySelector('a-scene');
-        const cacheRoot = document.querySelector('#model-cache');
         const cache = new Map();
         const activeTargets = new Set();
         const pendingTargets = [];
@@ -97,7 +94,6 @@
         function attachToTarget(entry) {
           const anchor = entry.anchor;
           if (!anchor || !activeTargets.has(entry.index)) return;
-          anchor.appendChild(entry.entity);
           entry.entity.setAttribute('visible', true);
         }
 
@@ -158,6 +154,11 @@
             active: activeTargets.has(index)
           };
 
+          if (!entry.anchor) {
+            console.error(`[GLB LRU] No target entity found for index ${index}`);
+            return;
+          }
+
           entity.setAttribute('position', '0 0 0');
           entity.setAttribute('rotation', '90 0 0');
           entity.setAttribute('scale', '1 1 1');
@@ -180,8 +181,8 @@
           }, { once: true });
 
           cache.set(index, entry);
-          cacheRoot.appendChild(entity);
-          entity.setAttribute('gltf-model', `url(${entry.url})`);
+          entry.anchor.appendChild(entity);
+          entity.setAttribute('gltf-model', entry.url);
           console.info(`[GLB LRU] Loading target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
         }
 
@@ -243,7 +244,6 @@
           if (entry) {
             entry.active = false;
             entry.entity.setAttribute('visible', false);
-            cacheRoot.appendChild(entry.entity);
             console.info(`[GLB LRU] Target ${index} lost; model retained in cache`);
           }
 
