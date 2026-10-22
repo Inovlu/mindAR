@@ -47,7 +47,7 @@
   <body>
     <button id="capture-button" type="button" aria-label="Sacar foto"></button>
     <div id="capture-flash"></div>
-    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 10; warmupTolerance: 3; missTolerance: 1;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
