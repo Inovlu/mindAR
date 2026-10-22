@@ -7,95 +7,267 @@
   </head>
   <body>
     <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.00001; filterBeta: 10; warmupTolerance: 5; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      <a-assets>
-        <a-asset-item id="abigail_bernandez" src="assets/Abigail_Bernardez_optimizado.glb"></a-asset-item>
-        <a-asset-item id="agustin_pina" src="assets/Agustin_Pina_optimizado.glb"></a-asset-item>
-        <a-asset-item id="agustin_sadran" src="assets/Sadran_Agustin_optimizados.glb"></a-asset-item>
-        <a-asset-item id="agustina_lopez" src="assets/Agustina_Lopez_optimizado.glb"></a-asset-item>
-        <a-asset-item id="amy_lindo" src="assets/Amy_Lindo_optimizado.glb"></a-asset-item>
-        <a-asset-item id="ariadna_robles" src="assets/Ariadna_Robles_optimizado.glb"></a-asset-item>
-        <a-asset-item id="casolati_camila" src="assets/Cami_Casolati_optimizado.glb"></a-asset-item>
-        <a-asset-item id="brucoli_roman" src="assets/Roman_Brucoli_optimizado.glb"></a-asset-item>
-        <a-asset-item id="facundo_piputo" src="assets/Piputto_Facundo_optimizado.glb"></a-asset-item>
-        <a-asset-item id="federico_pracias" src="assets/Fede_Pracias_optimizado.glb"></a-asset-item>
-        <a-asset-item id="francisco_rizzo" src="assets/Fran_Rizzo_optimizado.glb"></a-asset-item>
-        <a-asset-item id="julieta_ascona" src="assets/Ascona_Juli_optimizado.glb"></a-asset-item>
-        <a-asset-item id="luca_violi" src="assets/Violi_Luca_optimizado.glb"></a-asset-item>
-        <a-asset-item id="maite_rodriguez" src="assets/Maite_Rodriguez_optimizado.glb"></a-asset-item>
-        <a-asset-item id="melody_ramos" src="assets/Ramos_Melody_optimizado.glb"></a-asset-item>
-        <a-asset-item id="pedro_mamciz" src="assets/Mamciz_Pedro_optimizado.glb"></a-asset-item>
-        <a-asset-item id="roque_casarrella" src="assets/Roque_Casarella_optimizado.glb"></a-asset-item>
-        <a-asset-item id="silva_francisco" src="assets/Francisco_Silva_optimizado.glb"></a-asset-item>
-        <a-asset-item id="silva_irina" src="assets/Irina_Silva_optimizado.glb"></a-asset-item>
-        <a-asset-item id="sofia_cravero" src="assets/Sofi_Cravero_optimizado.glb"></a-asset-item>
-        <a-asset-item id="virna_vianello" src="assets/Virna_Vianello_optimizado.glb"></a-asset-item>
-      </a-assets>
-
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-entity id="model-cache"></a-entity>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-gltf-model src="#abigail_bernandez" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-gltf-model src="#agustin_pina" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-gltf-model src="#agustin_sadran" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-gltf-model src="#agustina_lopez" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 4">
-        <a-gltf-model src="#amy_lindo" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 5">
-        <a-gltf-model src="#ariadna_robles" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 6">
-        <a-gltf-model src="#casolati_camila" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 7">
-        <a-gltf-model src="#brucoli_roman" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 8">
-        <a-gltf-model src="#facundo_piputo" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 9">
-        <a-gltf-model src="#federico_pracias" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 10">
-        <a-gltf-model src="#francisco_rizzo" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 11">
-        <a-gltf-model src="#julieta_ascona" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 12">
-        <a-gltf-model src="#luca_violi" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 13">
-        <a-gltf-model src="#maite_rodriguez" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 14">
-        <a-gltf-model src="#melody_ramos" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 15">
-        <a-gltf-model src="#pedro_mamciz" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 16">
-        <a-gltf-model src="#roque_casarrella" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 17">
-        <a-gltf-model src="#silva_francisco" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 18">
-        <a-gltf-model src="#silva_irina" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 19">
-        <a-gltf-model src="#sofia_cravero" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
       <a-entity mindar-image-target="targetIndex: 20">
-        <a-gltf-model src="#virna_vianello" position="0 0 0" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
       </a-entity>
     </a-scene>
+    <script>
+      (() => {
+        const MAX_CACHED_MODELS = 3;
+        const modelPaths = [
+          'assets/Abigail_Bernardez_optimizado.glb',
+          'assets/Agustin_Pina_optimizado.glb',
+          'assets/Sadran_Agustin_optimizados.glb',
+          'assets/Agustina_Lopez_optimizado.glb',
+          'assets/Amy_Lindo_optimizado.glb',
+          'assets/Ariadna_Robles_optimizado.glb',
+          'assets/Cami_Casolati_optimizado.glb',
+          'assets/Roman_Brucoli_optimizado.glb',
+          'assets/Piputto_Facundo_optimizado.glb',
+          'assets/Fede_Pracias_optimizado.glb',
+          'assets/Fran_Rizzo_optimizado.glb',
+          'assets/Ascona_Juli_optimizado.glb',
+          'assets/Violi_Luca_optimizado.glb',
+          'assets/Maite_Rodriguez_optimizado.glb',
+          'assets/Ramos_Melody_optimizado.glb',
+          'assets/Mamciz_Pedro_optimizado.glb',
+          'assets/Roque_Casarella_optimizado.glb',
+          'assets/Francisco_Silva_optimizado.glb',
+          'assets/Irina_Silva_optimizado.glb',
+          'assets/Sofi_Cravero_optimizado.glb',
+          'assets/Virna_Vianello_optimizado.glb'
+        ];
+
+        const scene = document.querySelector('a-scene');
+        const cacheRoot = document.querySelector('#model-cache');
+        const cache = new Map();
+        const activeTargets = new Set();
+        const pendingTargets = [];
+        const pendingSet = new Set();
+
+        function touch(index) {
+          const entry = cache.get(index);
+          if (!entry) return;
+          cache.delete(index);
+          cache.set(index, entry);
+        }
+
+        function attachToTarget(entry) {
+          const anchor = entry.anchor;
+          if (!anchor || !activeTargets.has(entry.index)) return;
+          anchor.appendChild(entry.entity);
+          entry.entity.setAttribute('visible', true);
+        }
+
+        function disposeEntry(entry) {
+          const entity = entry.entity;
+          const root = entity.getObject3D('mesh') || entity.object3D;
+          const geometries = new Set();
+          const materials = new Set();
+          const textures = new Set();
+
+          if (root) {
+            root.traverse((object) => {
+              if (object.geometry) geometries.add(object.geometry);
+              const objectMaterials = Array.isArray(object.material)
+                ? object.material
+                : object.material ? [object.material] : [];
+
+              objectMaterials.forEach((material) => {
+                materials.add(material);
+                Object.values(material).forEach((value) => {
+                  if (value && value.isTexture) textures.add(value);
+                });
+              });
+            });
+          }
+
+          textures.forEach((texture) => texture.dispose());
+          materials.forEach((material) => material.dispose());
+          geometries.forEach((geometry) => geometry.dispose());
+          entity.removeAttribute('gltf-model');
+          if (entity.parentNode) entity.parentNode.removeChild(entity);
+
+          if (window.THREE && THREE.Cache.enabled) {
+            THREE.Cache.remove(entry.url);
+          }
+        }
+
+        function evictLeastRecentlyUsedInactive() {
+          for (const [index, entry] of cache) {
+            if (!entry.active && entry.status === 'ready') {
+              cache.delete(index);
+              disposeEntry(entry);
+              console.info(`[GLB LRU] Evicted target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
+              return true;
+            }
+          }
+          return false;
+        }
+
+        function createEntry(index) {
+          const entity = document.createElement('a-entity');
+          const entry = {
+            index,
+            url: new URL(modelPaths[index], document.baseURI).href,
+            entity,
+            anchor: document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`),
+            status: 'loading',
+            active: activeTargets.has(index)
+          };
+
+          entity.setAttribute('position', '0 0 0');
+          entity.setAttribute('rotation', '90 0 0');
+          entity.setAttribute('scale', '1 1 1');
+          entity.setAttribute('visible', false);
+
+          entity.addEventListener('model-loaded', () => {
+            if (cache.get(index) !== entry) return;
+            entry.status = 'ready';
+            if (entry.active && activeTargets.has(index)) attachToTarget(entry);
+            console.info(`[GLB LRU] Loaded target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
+            processPendingTargets();
+          }, { once: true });
+
+          entity.addEventListener('model-error', (event) => {
+            if (cache.get(index) !== entry) return;
+            console.error(`[GLB LRU] Failed to load target ${index}`, event.detail);
+            cache.delete(index);
+            disposeEntry(entry);
+            processPendingTargets();
+          }, { once: true });
+
+          cache.set(index, entry);
+          cacheRoot.appendChild(entity);
+          entity.setAttribute('gltf-model', `url(${entry.url})`);
+          console.info(`[GLB LRU] Loading target ${index}; cache ${cache.size}/${MAX_CACHED_MODELS}`);
+        }
+
+        function processPendingTargets() {
+          while (pendingTargets.length > 0) {
+            const index = pendingTargets[0];
+            if (!activeTargets.has(index)) {
+              pendingTargets.shift();
+              pendingSet.delete(index);
+              continue;
+            }
+
+            if (cache.has(index)) {
+              pendingTargets.shift();
+              pendingSet.delete(index);
+              continue;
+            }
+
+            while (cache.size >= MAX_CACHED_MODELS && evictLeastRecentlyUsedInactive()) {
+              // Evict inactive ready entries until one of the three slots is free.
+            }
+
+            if (cache.size >= MAX_CACHED_MODELS) return;
+
+            pendingTargets.shift();
+            pendingSet.delete(index);
+            createEntry(index);
+          }
+        }
+
+        function onTargetFound(index, anchor) {
+          activeTargets.add(index);
+          const entry = cache.get(index);
+          if (entry) {
+            entry.active = true;
+            entry.anchor = anchor;
+            touch(index);
+            if (entry.status === 'ready') attachToTarget(entry);
+            console.info(`[GLB LRU] Target ${index} found; cache hit, moved to MRU`);
+            return;
+          }
+
+          if (!pendingSet.has(index)) {
+            pendingTargets.push(index);
+            pendingSet.add(index);
+          }
+          processPendingTargets();
+        }
+
+        function onTargetLost(index) {
+          activeTargets.delete(index);
+          if (pendingSet.has(index)) {
+            pendingSet.delete(index);
+            const queueIndex = pendingTargets.indexOf(index);
+            if (queueIndex !== -1) pendingTargets.splice(queueIndex, 1);
+          }
+
+          const entry = cache.get(index);
+          if (entry) {
+            entry.active = false;
+            entry.entity.setAttribute('visible', false);
+            cacheRoot.appendChild(entry.entity);
+            console.info(`[GLB LRU] Target ${index} lost; model retained in cache`);
+          }
+
+          processPendingTargets();
+        }
+
+        function initializeTargetEvents() {
+          document.querySelectorAll('[mindar-image-target]').forEach((anchor) => {
+            const targetConfig = anchor.getAttribute('mindar-image-target');
+            const index = Number(targetConfig.targetIndex);
+
+            if (!Number.isInteger(index) || !modelPaths[index]) {
+              console.error('[GLB LRU] Missing GLB mapping for target', targetConfig.targetIndex);
+              return;
+            }
+
+            anchor.addEventListener('targetFound', () => onTargetFound(index, anchor));
+            anchor.addEventListener('targetLost', () => onTargetLost(index));
+          });
+        }
+
+        if (scene.hasLoaded) initializeTargetEvents();
+        else scene.addEventListener('loaded', initializeTargetEvents, { once: true });
+      })();
+    </script>
   </body>
 </html>
