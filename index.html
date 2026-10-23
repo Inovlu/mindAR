@@ -63,7 +63,7 @@
         right: 24px;
         bottom: calc(36px + env(safe-area-inset-bottom));
         z-index: 10000;
-        display: grid;
+        display: none;
         place-items: center;
         width: 48px;
         height: 48px;
@@ -87,6 +87,11 @@
         box-shadow: none;
         cursor: not-allowed;
         opacity: 0.75;
+      }
+      @media (pointer: coarse) {
+        #torch-button {
+          display: grid;
+        }
       }
       #capture-flash {
         position: fixed;
@@ -1334,7 +1339,6 @@
         const torchButton = document.getElementById('torch-button');
         const savePhotoButton = document.getElementById('save-photo-button');
         const discardPhotoButton = document.getElementById('discard-photo-button');
-<<<<<<< HEAD
         const homeScreen = document.getElementById('home-screen');
         const startHuntButton = document.getElementById('start-hunt-button');
         const startupMessage = document.getElementById('startup-message');
@@ -1437,10 +1441,9 @@
             showStartupError(error);
           }
         });
-
+        prepareStartup();
         prepareStartup();
 
-=======
         let cameraTrack = null;
         let torchSupported = false;
         let torchEnabled = false;
@@ -1491,7 +1494,6 @@
           }
         });
 
->>>>>>> ccb730bfa672e497e21d8527c7286630fb34b05f
         captureButton.addEventListener('click', async () => {
           if (!scene.renderer) return;
           captureButton.disabled = true;
