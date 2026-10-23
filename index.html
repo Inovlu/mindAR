@@ -1366,11 +1366,11 @@
         }
 
         scene.addEventListener('arReady', () => {
-          homeScreen.classList.remove('is-loading', 'is-preparing', 'is-ready');
           homeScreen.classList.add('is-scanning');
           window.setTimeout(() => {
             document.body.classList.add('ar-active');
             homeScreen.hidden = true;
+            homeScreen.classList.remove('is-loading', 'is-preparing', 'is-ready', 'is-scanning');
           }, 350);
         }, { once: true });
 
@@ -1441,7 +1441,6 @@
             showStartupError(error);
           }
         });
-        prepareStartup();
         prepareStartup();
 
         let cameraTrack = null;
