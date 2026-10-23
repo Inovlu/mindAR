@@ -1,14 +1,40 @@
 <html>
   <head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0D233A" />
+    <meta name="description" content="Explorá Tornavías y descubrí los mechas de HUNT MECHAS en realidad aumentada." />
+    <title>HUNT MECHAS | UNSAM</title>
     <link rel="preconnect" href="https://aframe.io" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="preload" href="./targets/targets.mind" as="fetch" crossorigin />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
+      :root {
+        color-scheme: dark;
+        --unsam-blue: #1d5288;
+        --deep-blue: #0d233a;
+        --light-blue: #729bc0;
+        --metal-blue: #a1c1db;
+        --titanium: #cfdeea;
+        --accent-blue: #729bc0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--deep-blue);
+        color: var(--titanium);
+        font-family: "Barlow", sans-serif;
+      }
       #capture-button {
+        display: none;
         position: fixed;
         left: 50%;
         bottom: calc(24px + env(safe-area-inset-bottom));
@@ -22,6 +48,9 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+      }
+      body.ar-active #capture-button {
+        display: block;
       }
       #capture-button:active {
         background: rgba(255, 255, 255, 0.8);
@@ -56,7 +85,7 @@
         box-sizing: border-box;
         background: rgba(0, 0, 0, 0.92);
         color: #ffffff;
-        font-family: sans-serif;
+        font-family: inherit;
       }
       #photo-preview[hidden] {
         display: none;
@@ -93,9 +122,592 @@
       #photo-preview-actions button:disabled {
         opacity: 0.6;
       }
+      #home-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: grid;
+        place-items: center;
+        overflow-y: auto;
+        padding: 24px;
+        padding-top: max(24px, env(safe-area-inset-top));
+        padding-bottom: max(24px, env(safe-area-inset-bottom));
+        background-color: #081a2b;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='%23729bc0' fill-opacity='.2'%3E%3Ccircle cx='13' cy='21' r='1'/%3E%3Ccircle cx='54' cy='12' r='.8'/%3E%3Ccircle cx='98' cy='29' r='1.1'/%3E%3Ccircle cx='31' cy='61' r='.8'/%3E%3Ccircle cx='78' cy='53' r='1'/%3E%3Ccircle cx='116' cy='72' r='.8'/%3E%3Ccircle cx='17' cy='103' r='1.1'/%3E%3Ccircle cx='61' cy='91' r='.8'/%3E%3Ccircle cx='101' cy='117' r='1'/%3E%3C/g%3E%3C/svg%3E");
+      }
+      #home-screen[hidden] {
+        display: none;
+      }
+      .home-card {
+        position: relative;
+        width: min(100%, 590px);
+        padding: clamp(26px, 6vw, 48px);
+        overflow: hidden;
+        border: 1px solid rgba(207, 222, 234, 0.62);
+        border-radius: 4px;
+        background: #0d233a;
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58), inset 0 0 0 5px rgba(13, 35, 58, 0.38);
+      }
+      .home-card::before,
+      .home-card::after {
+        position: absolute;
+        content: "";
+        pointer-events: none;
+      }
+      .home-card::before {
+        inset: 12px;
+        border: 1px solid rgba(161, 193, 219, 0.22);
+      }
+      .home-card::after {
+        top: 0;
+        right: 36px;
+        width: 52px;
+        height: 6px;
+        background: var(--accent-blue);
+        box-shadow: 58px 0 0 rgba(114, 155, 192, 0.4);
+        transform: skewX(-35deg);
+      }
+      .project-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 34px;
+        color: var(--titanium);
+        font-family: "Rajdhani", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      .project-mark::before {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--accent-blue);
+        content: "";
+        transform: rotate(45deg);
+      }
+      #project-title {
+        margin: 0;
+        color: #ffffff;
+        font-family: "Rajdhani", sans-serif;
+        font-size: clamp(3rem, 13vw, 5rem);
+        font-weight: 900;
+        letter-spacing: 0.015em;
+        line-height: 0.86;
+        text-shadow: 0 3px 0 rgba(13, 35, 58, 0.7), 0 0 24px rgba(161, 193, 219, 0.2);
+        text-transform: uppercase;
+      }
+      .title-accent {
+        display: block;
+        color: transparent;
+        background-image: linear-gradient(110deg, var(--light-blue) 0%, var(--titanium) 48%, var(--light-blue) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-stroke: 0;
+        filter: drop-shadow(0 0 9px rgba(114, 155, 192, 0.56));
+      }
+      .project-description {
+        max-width: 42ch;
+        margin: 0;
+        color: #e0eaf2;
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+      .home-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(161, 193, 219, 0.24);
+      }
+      .home-actions button,
+      .home-actions a {
+        min-height: 48px;
+        border: 1px solid rgba(207, 222, 234, 0.58);
+        border-radius: 3px;
+        color: #ffffff;
+        font: inherit;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #start-hunt-button {
+        flex: 1 1 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        border-color: var(--accent-blue);
+        background: var(--accent-blue);
+        color: var(--deep-blue);
+        box-shadow: 0 4px 18px rgba(29, 82, 136, 0.36), inset 0 1px rgba(255, 255, 255, 0.24);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      #start-hunt-button:hover {
+        background: var(--metal-blue);
+        transform: translateY(-1px);
+      }
+      #start-hunt-button:disabled {
+        cursor: wait;
+      }
+      #home-screen.is-loading #start-hunt-button {
+        display: none;
+      }
+      #home-screen.is-error #start-hunt-button {
+        border-color: var(--accent-blue);
+        background: transparent;
+        color: var(--titanium);
+      }
+      .secondary-action {
+        flex: 1 1 120px;
+        background: rgba(114, 155, 192, 0.12);
+      }
+      .secondary-action:hover {
+        background: rgba(114, 155, 192, 0.2);
+      }
+      #startup-status {
+        display: none;
+        margin-top: 26px;
+        padding: 16px;
+        border: 1px solid rgba(161, 193, 219, 0.38);
+        background: rgba(7, 23, 38, 0.62);
+        box-shadow: inset 0 0 18px rgba(114, 155, 192, 0.08);
+      }
+      #home-screen.is-loading #startup-status,
+      #home-screen.is-error #startup-status {
+        display: block;
+      }
+      #startup-message {
+        display: block;
+        margin-bottom: 12px;
+        color: #ffffff;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+      #startup-error {
+        display: none;
+        margin: 12px 0 0;
+        color: var(--titanium);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      #home-screen.is-error #startup-error {
+        display: block;
+      }
+      #startup-progress {
+        position: relative;
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(207, 222, 234, 0.55);
+        border-radius: 1px;
+        background: rgba(13, 35, 58, 0.75);
+      }
+      #startup-progress-fill {
+        width: 34%;
+        height: 100%;
+        border-radius: 0;
+        background: var(--accent-blue);
+        transform: translateX(-120%);
+      }
+      #home-screen.is-loading:not(.is-preparing) #startup-progress-fill {
+        animation: loading-sweep 1.35s ease-in-out infinite;
+      }
+      #home-screen.is-ready #startup-progress-fill {
+        width: 100%;
+        transform: translateX(0);
+        transition: width 0.25s ease;
+      }
+      #home-screen.is-error #startup-progress-fill {
+        width: 100%;
+        background: var(--accent-blue);
+        transform: translateX(0);
+        animation: none;
+      }
+      #home-screen.is-preparing #startup-progress-fill {
+        width: var(--load-progress, 34%);
+        transform: none;
+        transition: width 0.2s ease;
+      }
+      #home-screen.is-preparing #startup-progress-fill.is-indeterminate {
+        width: 34%;
+        animation: loading-sweep 1.35s ease-in-out infinite;
+      }
+      @keyframes loading-sweep {
+        from { transform: translateX(-120%); }
+        to { transform: translateX(320%); }
+      }
+      .info-dialog {
+        width: min(92vw, 620px);
+        max-height: min(82vh, 760px);
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid rgba(161, 193, 219, 0.5);
+        border-radius: 20px;
+        background: var(--deep-blue);
+        color: var(--titanium);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+      }
+      .info-dialog::backdrop {
+        background: rgba(4, 15, 27, 0.78);
+        backdrop-filter: blur(5px);
+      }
+      .dialog-header {
+        position: sticky;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 22px;
+        border-bottom: 1px solid rgba(161, 193, 219, 0.25);
+        background: var(--deep-blue);
+      }
+      .dialog-header h2 {
+        margin: 0;
+        color: #ffffff;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+      .dialog-close {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid rgba(207, 222, 234, 0.4);
+        border-radius: 50%;
+        background: transparent;
+        color: #ffffff;
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+      .dialog-content {
+        max-height: calc(min(82vh, 760px) - 82px);
+        padding: 20px 22px 26px;
+        overflow-y: auto;
+        line-height: 1.6;
+      }
+      .dialog-content h3 {
+        margin: 20px 0 8px;
+        color: var(--metal-blue);
+        font-family: "Rajdhani", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+      .dialog-content h3:first-child {
+        margin-top: 0;
+      }
+      .dialog-content p,
+      .dialog-content ul {
+        margin: 0 0 12px;
+      }
+      .dialog-content ul {
+        padding-left: 20px;
+      }
+      .credits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 0 24px;
+      }
+      .credits-grid ul {
+        margin-top: 0;
+      }
+      .organization-grid ul {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 24px;
+        padding: 0;
+        list-style: none;
+      }
+      .organization-grid li {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .organization-grid li span {
+        color: var(--metal-blue);
+        font-size: 0.86rem;
+      }
+      .organization-grid {
+        grid-template-columns: 1fr;
+      }
+      @media (max-width: 420px) {
+        .organization-grid ul {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+      }
+      .home-card {
+        width: min(100%, 440px);
+        padding: clamp(24px, 6vw, 36px);
+        border-color: rgba(114, 155, 192, 0.55);
+        border-radius: 22px;
+        background: #0b1424;
+        box-shadow: 0 24px 72px rgba(0, 0, 0, 0.52), inset 0 1px rgba(207, 222, 234, 0.06);
+      }
+      .home-card::before,
+      .home-card::after {
+        content: none;
+      }
+      .project-mark {
+        display: block;
+        margin: 0 0 20px;
+        color: var(--metal-blue);
+        text-align: center;
+      }
+      .project-mark::before {
+        content: none;
+      }
+      .radar {
+        position: relative;
+        width: 112px;
+        aspect-ratio: 1;
+        margin: 0 auto 20px;
+        overflow: hidden;
+        border: 1px dashed rgba(114, 155, 192, 0.55);
+        border-radius: 50%;
+        background: rgba(13, 35, 58, 0.72);
+        box-shadow: 0 0 28px rgba(114, 155, 192, 0.15), inset 0 0 24px rgba(114, 155, 192, 0.09);
+      }
+      .radar-ring {
+        position: absolute;
+        border: 1px solid rgba(114, 155, 192, 0.32);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .radar-ring:first-child {
+        inset: 14%;
+      }
+      .radar-ring:nth-child(2) {
+        inset: 31%;
+      }
+      .radar::before {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 50%;
+        height: 2px;
+        background: var(--accent-blue);
+        box-shadow: 0 0 8px rgba(114, 155, 192, 0.5);
+        animation: radar-sweep 3s linear infinite;
+        content: "";
+        transform-origin: left center;
+      }
+      .radar::after {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 13px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: var(--metal-blue);
+        box-shadow: 0 0 10px var(--light-blue), 0 0 26px rgba(114, 155, 192, 0.85);
+        content: "";
+        transform: translate(-50%, -50%);
+      }
+      @keyframes radar-sweep {
+        to { transform: rotate(360deg); }
+      }
+      #project-title {
+        font-size: clamp(2.5rem, 11vw, 3.1rem);
+        letter-spacing: 0.025em;
+        line-height: 1;
+        text-align: center;
+        text-shadow: 0 0 18px rgba(207, 222, 234, 0.18);
+      }
+      .title-accent {
+        display: inline;
+        color: transparent;
+        background-image: linear-gradient(110deg, var(--light-blue) 0%, var(--titanium) 48%, var(--light-blue) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-stroke: 0;
+        filter: drop-shadow(0 0 9px rgba(114, 155, 192, 0.56));
+      }
+      .project-description {
+        max-width: 42ch;
+        margin: 20px auto 0;
+        color: #aab8ca;
+        font-size: 0.94rem;
+        line-height: 1.65;
+        text-align: center;
+      }
+      .project-description strong {
+        color: var(--accent-blue);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .home-actions {
+        margin-top: 24px;
+        padding-top: 0;
+        border-top: 0;
+      }
+      .home-actions button,
+      .home-actions a {
+        border-radius: 5px;
+      }
+      #start-hunt-button {
+        border-color: var(--accent-blue);
+        background: var(--accent-blue);
+        color: var(--deep-blue);
+        box-shadow: 0 4px 20px rgba(29, 82, 136, 0.35), inset 0 1px rgba(255, 255, 255, 0.2);
+        font-size: 0.92rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+      }
+      #start-hunt-button:hover {
+        background: var(--metal-blue);
+      }
+      #home-screen.is-error #start-hunt-button {
+        border-color: var(--accent-blue);
+      }
+      .secondary-action {
+        background: rgba(114, 155, 192, 0.08);
+      }
+      .secondary-action:hover {
+        background: rgba(114, 155, 192, 0.18);
+      }
+      #startup-status {
+        border-color: rgba(114, 155, 192, 0.35);
+        border-radius: 12px;
+        background: rgba(7, 23, 38, 0.72);
+      }
+      #startup-message {
+        text-align: center;
+        text-transform: none;
+      }
+      #home-screen.is-loading:not(.is-preparing) #startup-progress-fill {
+        animation: loading-sweep 1.35s ease-in-out infinite;
+      }
+      @media (max-width: 420px) {
+        .radar {
+          width: 96px;
+        }
+      }
+      @media (max-width: 420px) {
+        #home-screen {
+          padding-right: 16px;
+          padding-left: 16px;
+        }
+        .home-card {
+          padding: 24px 20px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
     </style>
   </head>
   <body>
+    <main id="home-screen" class="is-loading is-preparing" aria-labelledby="project-title">
+      <section class="home-card">
+        <div class="radar" aria-hidden="true">
+          <span class="radar-ring"></span>
+          <span class="radar-ring"></span>
+        </div>
+        <div class="project-mark">21 Mechas ocultos</div>
+        <h1 id="project-title">HUNT <span class="title-accent">MECHAS</span></h1>
+        <p class="project-description">
+          <strong>Objetivo:</strong>
+          <span>21 Mechas están ocultos en el campus. Escaneá su insignia en Realidad Aumentada, capturalos en foto y reclamá tu recompensa.</span>
+        </p>
+        <div class="home-actions">
+          <button id="start-hunt-button" type="button">Iniciar caza</button>
+          <button class="secondary-action" id="help-button" type="button">Ayuda</button>
+          <button class="secondary-action" id="credits-button" type="button">Créditos</button>
+        </div>
+        <div id="startup-status" role="status" aria-live="polite">
+          <span id="startup-message">Preparándote para la búsqueda</span>
+          <div id="startup-progress" role="progressbar" aria-label="Preparando los datos de rastreo" aria-valuemin="0" aria-valuemax="100">
+            <div id="startup-progress-fill" class="is-indeterminate"></div>
+          </div>
+          <p id="startup-error">
+            No se pudo iniciar la cámara o el sistema de realidad aumentada. Revisá los permisos e intentá nuevamente.
+          </p>
+        </div>
+      </section>
+    </main>
+    <dialog class="info-dialog" id="help-dialog" aria-labelledby="help-title">
+      <div class="dialog-header">
+        <h2 id="help-title">Ayuda de campo</h2>
+        <button class="dialog-close" type="button" aria-label="Cerrar ayuda">&times;</button>
+      </div>
+      <div class="dialog-content">
+        <h3>¿Cómo encuentro un mecha?</h3>
+        <p>Permití el acceso a la cámara y apuntá hacia los targets distribuidos por la zona. Mantené el target dentro del encuadre unos instantes mientras se reconoce.</p>
+        <h3>¿No aparece el mecha esperado?</h3>
+        <p>Comprobá que estás apuntando a la totalidad del target. Si aparece otro mecha o el seguimiento se confunde, apartá la cámara un momento y volvé a apuntar al target. El modelo puede tardar unos segundos en cargarse. Recordá: mientras mejor se vea el target, más preciso va a ser. Podés activar el flash si tu celular lo permite.</p>
+        <h3>¿La cámara no inicia o la experiencia se trabó?</h3>
+        <p>Verificá que el navegador tenga permiso para usar la cámara y que la página esté abierta en una conexión segura. Si el problema continúa, recargá la página e iniciá la caza nuevamente.</p>
+        <h3>¿Qué hago con una fotografía?</h3>
+        <p>Después de guardar la foto con el mecha, acercate al equipo de estudiantes de Animación 3D y VFX de la UNSAM y reclamá tu premio. Recordá: el mecha debe verse en su totalidad.</p>
+      </div>
+    </dialog>
+    <dialog class="info-dialog" id="credits-dialog" aria-labelledby="credits-title">
+      <div class="dialog-header">
+        <h2 id="credits-title">Créditos</h2>
+        <button class="dialog-close" type="button" aria-label="Cerrar créditos">&times;</button>
+      </div>
+      <div class="dialog-content">
+        <p><strong>HUNT MECHAS</strong> es una experiencia de realidad aumentada realizada por estudiantes de la carrera de Animación 3D y Efectos Visuales.</p>
+        <h3>Organización</h3>
+        <div class="credits-grid organization-grid">
+          <ul>
+            <li>Julieta Ascona<span>Gestión y Producción</span></li>
+            <li>Facundo Piputto<span>Gestión y Producción</span></li>
+            <li>Melody Ramos<span>Diseño</span></li>
+            <li>Román Brúcoli<span>Diseño</span></li>
+            <li>Camila Casolati<span>Diseño</span></li>
+            <li>Luciano Cespi<span>Programación WebAR</span></li>
+          </ul>
+        </div>
+        <h3>Estudiantes participantes de Mechas</h3>
+        <div class="credits-grid">
+          <ul>
+            <li>Agustín Pina</li>
+            <li>Amy Lindo</li>
+            <li>Ariadna Robles</li>
+            <li>Román Brúcoli</li>
+            <li>Sofía Cravero</li>
+            <li>Facundo Piputto</li>
+            <li>Federico Pracias</li>
+            <li>Julieta Ascona</li>
+            <li>Agustina López Stronati</li>
+            <li>Maite Rodriguez</li>
+          </ul>
+          <ul>
+            <li>Melody Ramos</li>
+            <li>Pedro Mamciz</li>
+            <li>Francisco Rizzo</li>
+            <li>Roque Casarella</li>
+            <li>Agustín Sadrán</li>
+            <li>Irina Silva</li>
+            <li>Luca Violi</li>
+            <li>Virna Vianello</li>
+            <li>Francisco Silva</li>
+            <li>Abigail Bernardez</li>
+          </ul>
+        </div>
+      </div>
+    </dialog>
     <button id="capture-button" type="button" aria-label="Sacar foto"></button>
     <div id="capture-flash"></div>
     <section id="photo-preview" role="dialog" aria-modal="true" aria-label="Vista previa de la foto" hidden>
@@ -105,7 +717,7 @@
         <button id="discard-photo-button" type="button">Descartar</button>
       </div>
     </section>
-    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 10; warmupTolerance: 3; missTolerance: 1;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: ./targets/targets.mind; filterMinCF: 0.0001; filterBeta: 10; warmupTolerance: 3; missTolerance: 1; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;" color-space="sRGB" renderer="colorManagement: true; antialias: false" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
@@ -686,6 +1298,111 @@
         const captureFlash = document.getElementById('capture-flash');
         const savePhotoButton = document.getElementById('save-photo-button');
         const discardPhotoButton = document.getElementById('discard-photo-button');
+        const homeScreen = document.getElementById('home-screen');
+        const startHuntButton = document.getElementById('start-hunt-button');
+        const startupMessage = document.getElementById('startup-message');
+        const startupProgress = document.getElementById('startup-progress');
+
+        document.querySelectorAll('.dialog-close').forEach((button) => {
+          button.addEventListener('click', () => button.closest('dialog').close());
+        });
+        document.getElementById('help-button').addEventListener('click', () => {
+          document.getElementById('help-dialog').showModal();
+        });
+        document.getElementById('credits-button').addEventListener('click', () => {
+          document.getElementById('credits-dialog').showModal();
+        });
+
+        function showStartupError(error) {
+          console.error('[AR] Failed to start MindAR', error);
+          homeScreen.classList.remove('is-loading', 'is-ready', 'is-preparing');
+          homeScreen.classList.add('is-error');
+          startupMessage.textContent = 'No se pudo preparar la caza';
+          document.getElementById('startup-progress-fill').classList.remove('is-indeterminate');
+          startupProgress.setAttribute('aria-valuenow', '0');
+          startHuntButton.disabled = false;
+          startHuntButton.textContent = 'Recargar página';
+        }
+
+        scene.addEventListener('arReady', () => {
+          homeScreen.classList.remove('is-loading', 'is-preparing', 'is-ready');
+          homeScreen.classList.add('is-scanning');
+          window.setTimeout(() => {
+            document.body.classList.add('ar-active');
+            homeScreen.hidden = true;
+          }, 350);
+        }, { once: true });
+
+        scene.addEventListener('arError', (event) => {
+          showStartupError(event.detail);
+        }, { once: true });
+
+        async function prepareStartup() {
+          const progressFill = document.getElementById('startup-progress-fill');
+          const targetUrl = new URL('./targets/targets.mind', document.baseURI);
+          const startedAt = performance.now();
+          try {
+            const response = await fetch(targetUrl);
+            if (!response.ok) {
+              throw new Error(`Failed to load tracking data (${response.status})`);
+            }
+
+            const totalBytes = Number(response.headers.get('content-length'));
+            if (response.body && response.body.getReader && totalBytes > 0) {
+              progressFill.classList.remove('is-indeterminate');
+              const reader = response.body.getReader();
+              let receivedBytes = 0;
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                receivedBytes += value.byteLength;
+                const percent = Math.min(100, Math.round((receivedBytes / totalBytes) * 100));
+                homeScreen.style.setProperty('--load-progress', `${percent}%`);
+                startupProgress.setAttribute('aria-valuenow', String(percent));
+              }
+            } else {
+              await response.arrayBuffer();
+            }
+
+            const minimumDisplayMs = 600;
+            const remainingDisplayMs = minimumDisplayMs - (performance.now() - startedAt);
+            if (remainingDisplayMs > 0) {
+              await new Promise((resolve) => window.setTimeout(resolve, remainingDisplayMs));
+            }
+            progressFill.classList.remove('is-indeterminate');
+            homeScreen.style.setProperty('--load-progress', '100%');
+            startupProgress.setAttribute('aria-valuenow', '100');
+            homeScreen.classList.remove('is-loading', 'is-preparing');
+            homeScreen.classList.add('is-ready');
+          } catch (error) {
+            showStartupError(error);
+          }
+        }
+
+        startHuntButton.addEventListener('click', () => {
+          if (homeScreen.classList.contains('is-error')) {
+            window.location.reload();
+            return;
+          }
+          if (!homeScreen.classList.contains('is-ready')) return;
+
+          homeScreen.classList.remove('is-ready');
+          homeScreen.classList.add('is-loading');
+          startupMessage.textContent = 'Preparando la cámara…';
+          startupProgress.removeAttribute('aria-valuenow');
+          document.getElementById('startup-progress-fill').classList.add('is-indeterminate');
+          startHuntButton.disabled = true;
+          try {
+            const arSystem = scene.systems['mindar-image-system'];
+            if (!arSystem) throw new Error('MindAR image system is not available');
+            arSystem.start();
+          } catch (error) {
+            showStartupError(error);
+          }
+        });
+
+        prepareStartup();
+
         captureButton.addEventListener('click', async () => {
           if (!scene.renderer) return;
           captureButton.disabled = true;
