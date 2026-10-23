@@ -33,6 +33,59 @@
         color: var(--titanium);
         font-family: "Barlow", sans-serif;
       }
+      #ar-guidance-frame {
+        display: none;
+        position: fixed;
+        top: 46%;
+        left: 50%;
+        z-index: 9998;
+        width: min(78vw, 440px);
+        aspect-ratio: 1.25;
+        border: 1px dotted rgba(207, 222, 234, 0.72);
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px rgba(13, 35, 58, 0.28), inset 0 0 24px rgba(13, 35, 58, 0.08);
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+      }
+      body.ar-active #ar-guidance-frame {
+        display: block;
+      }
+      #ar-utility-actions {
+        display: none;
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top));
+        right: max(16px, env(safe-area-inset-right));
+        z-index: 10000;
+        gap: 10px;
+      }
+      body.ar-active #ar-utility-actions {
+        display: flex;
+      }
+      .ar-icon-button {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border: 1px solid rgba(207, 222, 234, 0.72);
+        border-radius: 4px;
+        background: rgba(8, 26, 43, 0.82);
+        color: var(--titanium);
+        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        backdrop-filter: blur(8px);
+      }
+      .ar-icon-button:hover,
+      .ar-icon-button:focus-visible {
+        border-color: var(--metal-blue);
+        background: rgba(29, 82, 136, 0.9);
+        color: #ffffff;
+      }
+      .ar-icon-button:focus-visible {
+        outline: 2px solid var(--titanium);
+        outline-offset: 3px;
+      }
       #capture-button {
         display: none;
         position: fixed;
@@ -42,18 +95,37 @@
         z-index: 10000;
         width: 72px;
         height: 72px;
-        border-radius: 50%;
-        border: 4px solid #ffffff;
-        background: rgba(255, 255, 255, 0.35);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        border: 2px solid rgba(207, 222, 234, 0.92);
+        border-radius: 20px;
+        background: rgba(8, 26, 43, 0.82);
+        box-shadow: 0 3px 18px rgba(0, 0, 0, 0.38), inset 0 0 0 4px rgba(207, 222, 234, 0.08);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        backdrop-filter: blur(8px);
+      }
+      #capture-button::before {
+        position: absolute;
+        inset: 13px;
+        border: 2px solid var(--metal-blue);
+        border-radius: 50%;
+        content: "";
+      }
+      #capture-button::after {
+        position: absolute;
+        inset: 22px;
+        border-radius: 50%;
+        background: var(--titanium);
+        box-shadow: 0 0 12px rgba(161, 193, 219, 0.55);
+        content: "";
       }
       body.ar-active #capture-button {
         display: block;
       }
       #capture-button:active {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(29, 82, 136, 0.94);
+      }
+      #capture-button:active::after {
+        background: #ffffff;
       }
       #capture-button:disabled {
         opacity: 0.5;
@@ -65,31 +137,32 @@
         z-index: 10000;
         display: none;
         place-items: center;
-        width: 48px;
-        height: 48px;
+        width: 52px;
+        height: 52px;
         padding: 0;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(207, 222, 234, 0.72);
+        border-radius: 4px;
+        background: rgba(8, 26, 43, 0.82);
+        color: var(--titanium);
+        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        backdrop-filter: blur(8px);
       }
       #torch-button[aria-pressed="true"] {
-        background: #ffffff;
-        color: #111111;
+        border-color: var(--metal-blue);
+        background: rgba(29, 82, 136, 0.94);
+        color: #ffffff;
       }
       #torch-button:disabled {
-        border-color: rgba(255, 255, 255, 0.45);
-        background: rgba(100, 100, 100, 0.45);
-        color: rgba(255, 255, 255, 0.45);
+        border-color: rgba(207, 222, 234, 0.3);
+        background: rgba(8, 26, 43, 0.58);
+        color: rgba(207, 222, 234, 0.42);
         box-shadow: none;
         cursor: not-allowed;
-        opacity: 0.75;
       }
       @media (pointer: coarse) {
-        #torch-button {
+        body.ar-active #torch-button {
           display: grid;
         }
       }
@@ -744,6 +817,24 @@
       </div>
     </dialog>
     <button id="capture-button" type="button" aria-label="Sacar foto"></button>
+    <div id="ar-guidance-frame" aria-hidden="true"></div>
+    <nav id="ar-utility-actions" aria-label="Información de la experiencia">
+      <button class="ar-icon-button" id="help-ar-button" type="button" aria-label="Abrir ayuda" title="Ayuda">
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M9.6 9a2.5 2.5 0 1 1 4.1 1.9c-1 .8-1.7 1.2-1.7 2.6"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+      </button>
+      <button class="ar-icon-button" id="credits-ar-button" type="button" aria-label="Abrir créditos" title="Créditos">
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter">
+          <path d="M5 6h14M5 12h14M5 18h9"></path>
+          <circle cx="3" cy="6" r=".6" fill="currentColor" stroke="none"></circle>
+          <circle cx="3" cy="12" r=".6" fill="currentColor" stroke="none"></circle>
+          <circle cx="3" cy="18" r=".6" fill="currentColor" stroke="none"></circle>
+        </svg>
+      </button>
+    </nav>
     <button id="torch-button" type="button" aria-label="Flash de cámara no disponible" aria-pressed="false" disabled>
       <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
         <path d="M13 2 4.5 13h6L9.5 22 19.5 9h-6L13 2z" />
@@ -1351,6 +1442,12 @@
           document.getElementById('help-dialog').showModal();
         });
         document.getElementById('credits-button').addEventListener('click', () => {
+          document.getElementById('credits-dialog').showModal();
+        });
+        document.getElementById('help-ar-button').addEventListener('click', () => {
+          document.getElementById('help-dialog').showModal();
+        });
+        document.getElementById('credits-ar-button').addEventListener('click', () => {
           document.getElementById('credits-dialog').showModal();
         });
 
